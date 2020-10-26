@@ -1,106 +1,116 @@
-import java.io.*;
-import java.util.Arrays;
-import java.util.Scanner;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.io.*;
 import java.io.File;
+import java.util.Arrays;
 import java.util.*;
 
-/**
- * Read in spotify top charts csv into a 2d array and formatted the output
- *
- * @author Jacky chan
- * @version 1.0
- */
 public class Main {
     public static void main(String[] args) throws FileNotFoundException {
-        PrintStream output = new PrintStream("Artists-WeekOfMMDDYYYY.txt");     //Creates  a text file  for the outputs
-        String fileName = "regional-global-daily-lastest.csv";
-        File file = new File("C:\\Users\\somet\\IdeaProjects\\Spotify top charts\\src\\regional-global-daily-latest.csv");  //creates file path for the Csv file
+
+        PrintStream output = new PrintStream("Playlist.txt");     //Creates  a text file  for the outputs
+        TopSongs playList = new TopSongs();
         String line = "";
-        String[][] arr2 = new String[201][5];           //creates 2d array
-        String[] arr = new String[100];
-        TopStreamingArtists list = new TopStreamingArtists();   //creates Linked List
+        String[] title = new String[200];
+        String[] artist = new String[200];
+        String[] myFiles = new String[]{"regional-global-weekly-2020-09-18--2020-09-25.csv", "regional-global-weekly-2020-09-11--2020-09-18.csv", "regional-global-weekly-2020-09-04--2020-09-11.csv",
+                                        "regional-global-weekly-2020-08-28--2020-09-04.csv", "regional-global-weekly-2020-08-21--2020-08-28.csv", "regional-global-weekly-2020-08-14--2020-08-21.csv",
+                                        "regional-global-weekly-2020-08-07--2020-08-14.csv", "regional-global-weekly-2020-07-31--2020-08-07.csv", "regional-global-weekly-2020-07-24--2020-07-31.csv",
+                                        "regional-global-weekly-2020-07-17--2020-07-24.csv", "regional-global-weekly-2020-07-10--2020-07-17.csv", "regional-global-weekly-2020-07-03--2020-07-10.csv",
+                                        "regional-global-weekly-2020-06-26--2020-07-03.csv"};
+    try {
+        for (int i = 0; i < myFiles.length - 1; i++) {
+            BufferedReader br = new BufferedReader(new FileReader("C:\\Users\\somet\\IdeaProjects\\SpotifyTopChats Queue\\src\\" + myFiles[i]));        //Reads in each csv file
+            while ((line = br.readLine()) != null) {
 
-
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(file));         //creates object that reads the data in the csv file
-            int i = 0;
-            while ((line = br.readLine()) != null) {           //loop reads through the csv line by line until the end
-
-                String[] values = line.split(",");              //creates a string array that splits the csv data by commans
-                arr2[i][0] = values[2];
-                i++;
-            }
-
-            for(int j = 0; j < arr.length; j++){                              //Removes the quotes from the artists names
-                arr[j] = arr2[j][0].replace('"', ' ');
-                arr[j] = arr[j].trim();
-            }
-
-            for (int x = 0; x < arr.length; x++)                                //Sorting algorithm that sorts artists alphabethically
-            {
-                for (int h = x + 1; h < arr.length; h++)
-                {
-                    if (arr[x].compareTo(arr[h]) > 0)
-                    {
-                        String temp = arr[x];
-                        arr[x] = arr[h];
-                        arr[h] = temp;
-                    }
+                String[] values = line.split(",");
+                if(Character.isWhitespace(values[2].charAt(0))){                    //removes the extra spacing
+                    values[2] = values[2].substring(1);
                 }
+                Song song = new Song(values[1].replaceAll("\"", ""), values[2].replaceAll("\"", ""));       //removes all instances of a " in the file
+                playList.insert(song);                                              //adds songs to Linked List
             }
-
-
-            for(int k = 0; k < arr.length; k++){                                          //adds names of artists to the linked list as well as to txt output.
-                list.insert(arr[k]);
-                output.println(arr[k]);
-            }
-
-            list.display();                         //prints out LinkedList
-
-
-
-        }catch(FileNotFoundException e){                        //exception handling
-            e.printStackTrace();
-        }catch(IOException e){
-            e.printStackTrace();
         }
 
-
-    }
-}
-
-class Artist {                                        //Artist Node
-    public String name;
-    public Artist next;
-
-    Artist(String name){
-        this.name = name;
-        next = null;
+    }catch(FileNotFoundException e){                        //exception handling
+        e.printStackTrace();
+    }catch(IOException e){
+        e.printStackTrace();
     }
 
-}
+    ArrayList<Song> sort = new ArrayList<Song>();                       //Created an arrayList to sort songs by name
+    Song cursor = playList.getFirst();
 
-class TopStreamingArtists{                                            //Artist LinkedList
-    private Artist first;
-    public void TopStreamingArtists(){
-        first = null;
+    while(cursor != null ){
+        sort.add(cursor);
+        cursor = cursor.getNext();
     }
-    public boolean isEmpty(){
-        return (first == null);
-    }
-    public void display(){                                      //display method (prints out LinkedList)
-        Artist n = first;
-        while (n != null) {
-            System.out.println(n.name + " ");
-            n = n.next;
+
+        Collections.sort(sort);                                             //called sorting method
+
+        TopSongs sortedPlaylist = new TopSongs();
+
+        for(int k = 0; k< sort.size(); k++){
+
+            Song song = new Song(sort.get(k).getTitle(), sort.get(k).getArtist());                              //looped through arraylist to add to LinkedList
+            sortedPlaylist.insert(song);
+            output.println(sort.get(k));
+
         }
-    }
+        sortedPlaylist.deQueue();                                                           //testing the deQueue methods and the last played song
 
-    public void insert(String artist) {                       //insert method (adds a new value to the linkedList)
-        Artist art = new Artist(artist);
-        art.next = first;
-        first = art;
-    }
+        sortedPlaylist.display();
 
+        sortedPlaylist.lastSong();
+
+    }
 }
+
+class Song implements Comparable<Song>{                                 //created song object class
+    private String title, artist;
+    private Song next;
+
+    Song(String title, String artist){
+        this.title = title;
+        this.artist = artist;
+    }
+
+    public Song getNext() {
+        return next;
+    }
+
+    public String getArtist() {
+        return artist;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setArtist(String artist) {
+        this.artist = artist;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setNext(Song next) {
+        this.next = next;
+    }
+    @Override
+    public int compareTo(Song songtwo){                                                                     //sorting algorithm to alphabetically sort by song titles
+        if(this.title.toLowerCase().compareTo(songtwo.getTitle().toLowerCase())> 0){
+            return 1;
+        }
+        if (this.title.toLowerCase().compareTo(songtwo.getTitle().toLowerCase()) < 0) {
+                return -1;
+        }
+    return 0;
+    }
+    @Override
+    public String toString(){
+        return this.title;
+    }
+}
+
